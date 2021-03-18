@@ -1,0 +1,6 @@
+pub const DEFAULT_RESOLUTION_W: u32 = 800;
+pub const DEFAULT_RESOLUTION_H: u32 = 600;
+
+pub const DEFAULT_DECAY_FACTOR: f32 = 0.01;
+pub const DEFAULT_MAX_VALUE: f32 = 1000.0;
+pub const DEFAULT_VALUE_CUTOFF: f32 = 0.1;

@@ -1,0 +1,3 @@
+pub const DEFAULT_RESOLUTION_H: u32 = 600;
+pub const DEFAULT_RESOLUTION_W: u32 = 800;
+pub const DEFAULT_DECAY_FACTOR: f32 = 0.01;

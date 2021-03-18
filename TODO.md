@@ -1,0 +1,1 @@
+Make it mirrored across the center so it looks like a Rorschach test
