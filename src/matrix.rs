@@ -8,6 +8,10 @@ pub struct Matrix2D {
 
 impl Matrix2D {
     pub fn new(height: usize, width: usize) -> Self {
+        if height > width {
+            println!("Matrix2D height ({}) is greater than Matrix2D width ({}). Are you sure about that?", height, width)
+        }
+
         let length = height * width;
         let cells = (0..length).into_iter().map(|_| 0.0).collect();
 
@@ -31,62 +35,37 @@ impl Matrix2D {
     }
 
     pub fn get(&self, x: usize, y: usize) -> Option<&f32> {
-        let index = index_calculator(x, y, self.width);
+        let index = calculate_index_from_xy(x, y, self.height, self.width);
         self.cells.get(index)
     }
 
     pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut f32> {
-        let index = index_calculator(x, y, self.width);
+        let index = calculate_index_from_xy(x, y, self.height, self.width);
         self.cells.get_mut(index)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (usize, usize, &f32)> {
-        let width = self.width;
-
-        self.cells.iter().enumerate().map(move |(index, value)| {
-            let (x, y) = xy_calculator(index, width);
-            (x, y, value)
-        })
+    pub fn get_by_index(&self, index: usize) -> Option<&f32> {
+        self.cells.get(index)
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (usize, usize, &mut f32)> {
-        let width = self.width;
-
-        self.cells
-            .iter_mut()
-            .enumerate()
-            .map(move |(index, value)| {
-                let (x, y) = xy_calculator(index, width);
-                (x, y, value)
-            })
+    pub fn get_mut_by_index(&mut self, index: usize) -> Option<&mut f32> {
+        self.cells.get_mut(index)
     }
 
-    pub fn par_iter(&self) -> impl ParallelIterator<Item = (usize, usize, &f32)> {
-        let width = self.width;
-
-        self.cells
-            .par_iter()
-            .enumerate()
-            .map(move |(index, value)| {
-                let (x, y) = xy_calculator(index, width);
-                (x, y, value)
-            })
+    pub fn iter(&self) -> impl Iterator<Item = &f32> {
+        self.cells.iter()
     }
 
-    pub fn par_iter_mut(&mut self) -> impl ParallelIterator<Item = (usize, usize, &mut f32)> {
-        let width = self.width;
-
-        self.cells
-            .par_iter_mut()
-            .enumerate()
-            .map(move |(index, value)| {
-                let (x, y) = xy_calculator(index, width);
-                (x, y, value)
-            })
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut f32> {
+        self.cells.iter_mut()
     }
 
     pub fn get_neighbouring_cell(&self, x: usize, y: usize, direction: Direction) -> Option<&f32> {
-        let index = index_calculator(x, y, self.width);
+        if (x > self.width) || (y > self.height) {
+            return None;
+        }
+
+        let index = calculate_index_from_xy(x, y, self.height, self.width);
         self.get_neighbour_index(index, direction)
             .map(|neighbour_index| self.cells.get(neighbour_index))
             .flatten()
@@ -98,7 +77,29 @@ impl Matrix2D {
         y: usize,
         direction: Direction,
     ) -> Option<&mut f32> {
-        let index = index_calculator(x, y, self.width);
+        let index = calculate_index_from_xy(x, y, self.height, self.width);
+        match self.get_neighbour_index(index, direction) {
+            Some(neighbour_index) => self.cells.get_mut(neighbour_index),
+            _ => None,
+        }
+    }
+
+    pub fn get_neighbouring_cell_by_index(
+        &self,
+        index: usize,
+        direction: Direction,
+    ) -> Option<&f32> {
+        match self.get_neighbour_index(index, direction) {
+            Some(neighbour_index) => self.cells.get(neighbour_index),
+            _ => None,
+        }
+    }
+
+    pub fn get_neighbouring_cell_mut_by_index(
+        &mut self,
+        index: usize,
+        direction: Direction,
+    ) -> Option<&mut f32> {
         match self.get_neighbour_index(index, direction) {
             Some(neighbour_index) => self.cells.get_mut(neighbour_index),
             _ => None,
@@ -130,11 +131,14 @@ impl Matrix2D {
     }
 }
 
-fn index_calculator(x: usize, y: usize, width: usize) -> usize {
+pub fn calculate_index_from_xy(x: usize, y: usize, _height: usize, width: usize) -> usize {
+    // assert!((0..=width).contains(&x), "calculate_index_from_xy() was passed an x value that was out of range (was {}, should have been in range 0..{})", x, width);
+    // assert!((0..=height).contains(&y), "calculate_index_from_xy() was passed a y value that was out of range (was {}, should have been in range 0..{})", y, height);
+
     x + width * y
 }
 
-fn xy_calculator(index: usize, width: usize) -> (usize, usize) {
+pub fn calculate_xy_from_index(index: usize, width: usize) -> (usize, usize) {
     (index / width, index % width)
 }
 
@@ -253,6 +257,38 @@ mod test {
     1 | 6  7  8  9 10 11
     2 |12 13 14 15 16 17
     */
+
+    #[test]
+    fn test_calculate_index_from_xy() {
+        let (width, height) = (6, 3);
+        let mut expected = 7;
+        let mut actual = calculate_index_from_xy(1, 1, width, height);
+        assert_eq!(expected, actual);
+
+        expected = 17;
+        actual = calculate_index_from_xy(5, 2, width, height);
+        assert_eq!(expected, actual);
+
+        expected = 12;
+        actual = calculate_index_from_xy(0, 2, width, height);
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_calculate_xy_from_index() {
+        let width = 6;
+        let mut expected = (1usize, 1usize);
+        let mut actual = calculate_xy_from_index(7, width);
+        assert_eq!(expected, actual);
+
+        expected = (2, 5);
+        actual = calculate_xy_from_index(17, width);
+        assert_eq!(expected, actual);
+
+        expected = (2, 0);
+        actual = calculate_xy_from_index(12, width);
+        assert_eq!(expected, actual);
+    }
 
     #[test]
     fn test_index_to_the_northwest() {
