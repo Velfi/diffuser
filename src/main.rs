@@ -191,16 +191,14 @@ impl Model {
             modifier_matrix.h()
         );
 
-        let model = Self {
+        Self {
             base_matrix,
             left_click_is_held_down: false,
             modifier_matrix,
             mouse_xy: Vector2::new(0.0, 0.0),
             right_click_is_held_down: false,
             window_rect,
-        };
-
-        model
+        }
     }
 
     fn update(&mut self, frame_time: f32) {
@@ -212,16 +210,13 @@ impl Model {
             if (0..self.window_rect.w()).contains(&(x as i32))
                 && (0..self.window_rect.h()).contains(&(y as i32))
             {
-                let new_value = match (self.left_click_is_held_down, self.right_click_is_held_down)
-                {
-                    (true, _) => DEFAULT_MAX_VALUE,
-                    (_, true) => 0.0,
-                    _ => unreachable!("No other combinations need to be considered"),
-                };
-
-                self.base_matrix
-                    .get_mut(x, y)
-                    .map(|value| *value = new_value);
+                // can't fail because we've already checked that coords are in bounds
+                *self.base_matrix.get_mut(x, y).expect("invalid xy coords") =
+                    match (self.left_click_is_held_down, self.right_click_is_held_down) {
+                        (true, _) => DEFAULT_MAX_VALUE,
+                        (_, true) => 0.0,
+                        _ => unreachable!("No other combinations need to be considered"),
+                    };
 
                 println!("Painting {{x: {}, y: {}}}", x, y);
             } else {
@@ -245,7 +240,7 @@ impl Model {
                 if *value > DEFAULT_VALUE_CUTOFF {
                     // cell spills over into its four neighbours, so it gets divided into five parts
                     // that's four parts for the neighbours, and one part to keep
-                    *value = *value / 9.0;
+                    *value /= 9.0;
 
                     // the current value will also be the amount that pours over into the neighbours
                     return Some((index, *value));
@@ -281,9 +276,9 @@ impl Model {
             .iter_mut()
             .enumerate()
             .for_each(|(i, mod_value)| {
-                base_matrix.get_mut_by_index(i).map(|value| {
-                    *value = (*value + *mod_value + (DEFAULT_DECAY_FACTOR * frame_time)).max(0.0)
-                });
+                if let Some(value) = base_matrix.get_mut_by_index(i) {
+                    *value = (*value + *mod_value + (DEFAULT_DECAY_FACTOR * frame_time)).max(0.0);
+                }
 
                 // Reset each mod cells once we've used it up
                 *mod_value = 0.0;

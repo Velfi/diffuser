@@ -1,5 +1,3 @@
-use rayon::prelude::*;
-
 pub struct Matrix2D {
     cells: Vec<f32>,
     width: usize,
@@ -138,10 +136,6 @@ pub fn calculate_index_from_xy(x: usize, y: usize, _height: usize, width: usize)
     x + width * y
 }
 
-pub fn calculate_xy_from_index(index: usize, width: usize) -> (usize, usize) {
-    (index / width, index % width)
-}
-
 #[derive(Clone, Copy)]
 pub enum Direction {
     NorthWest,
@@ -271,22 +265,6 @@ mod test {
 
         expected = 12;
         actual = calculate_index_from_xy(0, 2, width, height);
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn test_calculate_xy_from_index() {
-        let width = 6;
-        let mut expected = (1usize, 1usize);
-        let mut actual = calculate_xy_from_index(7, width);
-        assert_eq!(expected, actual);
-
-        expected = (2, 5);
-        actual = calculate_xy_from_index(17, width);
-        assert_eq!(expected, actual);
-
-        expected = (2, 0);
-        actual = calculate_xy_from_index(12, width);
         assert_eq!(expected, actual);
     }
 
