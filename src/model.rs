@@ -2,6 +2,8 @@ use crate::app;
 use crate::constants::{DEFAULT_DECAY_FACTOR, DEFAULT_MAX_VALUE, DEFAULT_VALUE_CUTOFF};
 use crate::matrix::{calculate_index_from_xy, Direction, Matrix2D};
 use crate::{rect::Rect, vector2::Vector2};
+use line_drawing::Bresenham;
+use log::debug;
 use rayon::prelude::*;
 
 /// Representation of the application state. In this example, a box will bounce around the screen.
@@ -10,6 +12,7 @@ pub struct Model {
     pub left_click_is_held_down: bool,
     pub modifier_matrix: Matrix2D,
     pub mouse_xy: Vector2<f32>,
+    pub previous_mouse_xy: Option<Vector2<f32>>,
     pub right_click_is_held_down: bool,
     pub window_rect: Rect<usize>,
 }
@@ -20,12 +23,12 @@ impl Model {
         let base_matrix = Matrix2D::new(window_rect.h() as usize, window_rect.w() as usize);
         let modifier_matrix = Matrix2D::new(window_rect.h() as usize, window_rect.w() as usize);
 
-        println!(
+        debug!(
             "Created new base_matrix with dimensions (w: {}, h: {})",
             base_matrix.w(),
             base_matrix.h()
         );
-        println!(
+        debug!(
             "Created new modifier_matrix with dimensions (w: {}, h: {})",
             modifier_matrix.w(),
             modifier_matrix.h()
@@ -36,6 +39,7 @@ impl Model {
             left_click_is_held_down: false,
             modifier_matrix,
             mouse_xy: Vector2::new(0.0, 0.0),
+            previous_mouse_xy: None,
             right_click_is_held_down: false,
             window_rect,
         }
@@ -43,28 +47,76 @@ impl Model {
 
     pub fn update(&mut self, frame_time: f32) {
         assert_eq!(self.base_matrix.len(), self.modifier_matrix.len(), "matrices should be identical length but they are not: base_matrix.len() == {}, modifier_matrix.len() == {}", self.base_matrix.len(), self.modifier_matrix.len());
-        if self.left_click_is_held_down || self.right_click_is_held_down {
+        let mouse_buttons_are_held_down =
+            self.left_click_is_held_down || self.right_click_is_held_down;
+        if mouse_buttons_are_held_down {
             let Vector2 { x, y } = self.mouse_xy;
             let (x, y) = (x.round() as usize, y.round() as usize);
 
             if self.window_rect.contains(x, y) {
-                let index = calculate_index_from_xy(
-                    x,
-                    y,
-                    self.window_rect.w() as usize,
-                );
-                // can't fail because we've already checked that coords are in bounds
-                *self.base_matrix.get_mut(index).expect("invalid index") =
-                    match (self.left_click_is_held_down, self.right_click_is_held_down) {
-                        (true, _) => DEFAULT_MAX_VALUE,
-                        (_, true) => 0.0,
-                        _ => unreachable!("No other combinations need to be considered"),
-                    };
+                if let Some(Vector2 {
+                    x: prev_x,
+                    y: prev_y,
+                }) = self.previous_mouse_xy
+                {
+                    let (prev_x, prev_y, x, y) = (
+                        prev_x.round() as isize,
+                        prev_y.round() as isize,
+                        x as isize,
+                        y as isize,
+                    );
+                    let line_points = Bresenham::new((prev_x, prev_y), (x, y));
+                    for (line_x, line_y) in line_points {
+                        if line_x < 0
+                            || line_y < 0
+                            || line_x > self.window_rect.w() as isize
+                            || line_y > self.window_rect.h() as isize
+                        {
+                            continue;
+                        }
 
-                println!("Painting {{x: {}, y: {}}}", x, y);
+                        let index = calculate_index_from_xy(
+                            line_x as usize,
+                            line_y as usize,
+                            self.window_rect.w() as usize,
+                        );
+
+                        *self.base_matrix.get_mut(index).expect("invalid index") =
+                            match (self.left_click_is_held_down, self.right_click_is_held_down) {
+                                (true, _) => DEFAULT_MAX_VALUE,
+                                (_, true) => 0.0,
+                                _ => {
+                                    unreachable!("No other combinations need to be considered")
+                                }
+                            };
+                    }
+
+                    debug!(
+                        "Painting from {{x: {}, y: {}}} to {{x: {}, y: {}}}",
+                        prev_x, prev_y, x, y
+                    );
+                } else {
+                    let index = calculate_index_from_xy(x, y, self.window_rect.w() as usize);
+
+                    // can't fail because we've already checked that coords are in bounds
+                    *self.base_matrix.get_mut(index).expect("invalid index") =
+                        match (self.left_click_is_held_down, self.right_click_is_held_down) {
+                            (true, _) => DEFAULT_MAX_VALUE,
+                            (_, true) => 0.0,
+                            _ => unreachable!("No other combinations need to be considered"),
+                        };
+
+                    debug!("Painting {{x: {}, y: {}}}", x, y);
+                }
+
+                // We need to store previous mouse positions so we can line draw when the mouse button is held down
+                self.previous_mouse_xy = Some(self.mouse_xy);
             } else {
-                println!("Mouse outside canvas bounds {{x: {}, y: {}}}", x, y);
+                debug!("Mouse outside canvas bounds {{x: {}, y: {}}}", x, y);
+                self.previous_mouse_xy = None;
             }
+        } else {
+            self.previous_mouse_xy = None;
         }
 
         let base_matrix = &mut self.base_matrix;
@@ -120,7 +172,7 @@ impl Model {
             .enumerate()
             .for_each(|(i, mod_value)| {
                 if let Some(value) = base_matrix.get_mut(i) {
-                    *value = (*value + *mod_value + (DEFAULT_DECAY_FACTOR * frame_time)).max(0.0);
+                    *value = (*value + *mod_value - (DEFAULT_DECAY_FACTOR * frame_time)).clamp(0.0, DEFAULT_MAX_VALUE);
                 }
 
                 // Reset each mod cells once we've used it up

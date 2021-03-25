@@ -8,3 +8,19 @@ impl<NumericType> Vector2<NumericType> {
         Vector2 { x, y }
     }
 }
+
+impl<NumericType> Clone for Vector2<NumericType>
+where
+    NumericType: Clone + Copy,
+{
+    fn clone(&self) -> Self {
+        Vector2 {
+            x: self.x,
+            y: self.y,
+        }
+    }
+}
+
+impl<NumericType> Copy for Vector2<NumericType>
+where
+    NumericType: Copy {}

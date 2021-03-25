@@ -1,3 +1,5 @@
+use log::warn;
+
 pub struct Matrix2D {
     cells: Vec<f32>,
     width: usize,
@@ -7,7 +9,7 @@ pub struct Matrix2D {
 impl Matrix2D {
     pub fn new(height: usize, width: usize) -> Self {
         if height > width {
-            println!("Matrix2D height ({}) is greater than Matrix2D width ({}). Are you sure about that?", height, width)
+            warn!("Matrix2D height ({}) is greater than Matrix2D width ({}). Are you sure about that?", height, width)
         }
 
         let length = height * width;

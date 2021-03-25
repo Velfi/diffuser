@@ -7,7 +7,7 @@ use crate::{
 };
 use circular_queue::CircularQueue;
 pub use error::Error;
-use log::error;
+use log::{debug, error, info};
 use pixels::{Pixels, SurfaceTexture};
 use std::time::Instant;
 use winit::{dpi::LogicalSize, event::VirtualKeyCode, event_loop::ControlFlow, window::Window};
@@ -97,18 +97,18 @@ pub fn run(app: App) {
             }
 
             if input.mouse_pressed(0) {
-                log::info!("Pressed LMB");
+                debug!("Pressed LMB");
                 model.left_click_is_held_down = true
             } else if input.mouse_released(0) {
-                log::info!("Released LMB");
+                debug!("Released LMB");
                 model.left_click_is_held_down = false
             }
 
             if input.mouse_pressed(1) {
-                log::info!("Pressed RMB");
+                debug!("Pressed RMB");
                 model.right_click_is_held_down = true
             } else if input.mouse_released(1) {
-                log::info!("Released RMB");
+                debug!("Released RMB");
                 model.right_click_is_held_down = false
             }
 
@@ -138,7 +138,7 @@ pub fn run(app: App) {
 
                 let fps_sum: i32 = fps_values.iter().sum();
                 let avg_fps = fps_sum as f32 / fps_values.len() as f32;
-                println!("FPS {}", avg_fps.trunc());
+                info!("FPS {}", avg_fps.trunc());
             }
         }
     })
