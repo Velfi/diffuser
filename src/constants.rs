@@ -2,5 +2,5 @@ pub const DEFAULT_RESOLUTION_W: u32 = 1920;
 pub const DEFAULT_RESOLUTION_H: u32 = 1080;
 
 pub const DEFAULT_DECAY_FACTOR: f32 = 0.01;
-pub const DEFAULT_MAX_VALUE: f32 = 1000.0;
-pub const DEFAULT_VALUE_CUTOFF: f32 = 0.1;
+pub const DEFAULT_MAX_VALUE: f32 = 400.0;
+pub const DEFAULT_VALUE_CUTOFF: f32 = 0.08;
