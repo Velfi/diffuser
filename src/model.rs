@@ -133,8 +133,8 @@ impl Model {
             .filter_map(|(index, value)| {
                 // for cells with paint, darken the cell, calculate spillover
                 if *value > DEFAULT_VALUE_CUTOFF {
-                    // cell spills over into its four neighbours, so it gets divided into five parts
-                    // that's four parts for the neighbours, and one part to keep
+                    // cell spills over into its eight neighbours, so it gets divided into nine parts
+                    // that's eight parts for the neighbours, and one part to keep
                     *value /= 9.0;
 
                     // the current value will also be the amount that pours over into the neighbours
@@ -172,7 +172,8 @@ impl Model {
             .enumerate()
             .for_each(|(i, mod_value)| {
                 if let Some(value) = base_matrix.get_mut(i) {
-                    *value = (*value + *mod_value - (DEFAULT_DECAY_FACTOR * frame_time)).clamp(0.0, DEFAULT_MAX_VALUE);
+                    *value = (*value + *mod_value - (DEFAULT_DECAY_FACTOR * frame_time))
+                        .clamp(0.0, DEFAULT_MAX_VALUE);
                 }
 
                 // Reset each mod cells once we've used it up

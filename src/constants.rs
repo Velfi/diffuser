@@ -1,5 +1,5 @@
-pub const DEFAULT_RESOLUTION_W: u32 = 1000;
-pub const DEFAULT_RESOLUTION_H: u32 = 1000;
+pub const DEFAULT_RESOLUTION_W: u32 = 800;
+pub const DEFAULT_RESOLUTION_H: u32 = 600;
 
 pub const DEFAULT_DECAY_FACTOR: f32 = 0.5;
 pub const DEFAULT_MAX_VALUE: f32 = 500.0;
